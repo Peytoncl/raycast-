@@ -20,7 +20,6 @@ typedef struct
     float y;
 } Angle;
 
-
 typedef struct
 {
     float x;
