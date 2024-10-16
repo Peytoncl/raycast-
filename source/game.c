@@ -20,13 +20,18 @@ bool keys[KEY_COUNT];
 float CAMERA_DEPTH = 8;
 float CAMERA_FOV = 120;
 
+float WALKING_FOV = 120;
+float RUNNING_FOV = 135;
+
+float CAMERA_PITCH = 0;
+
 float CENTER_X = WINDOW_W / 2;
 float CENTER_Y = WINDOW_H / 2;
 
 #define ROTATION_ANGLE 0.025
 
 #define PLAYER_SPAWN {5, 5}
-#define PLAYER_SPEED 0.0002
+#define PLAYER_SPEED 0.00025
 
 Color backgroundColor = {30, 30, 30};
 
@@ -62,7 +67,7 @@ void castRays()
     int stepY;
 
     int hit = 0; 
-    int side;  
+    int side;
 
     if (rayDirX < 0) 
     {
@@ -120,9 +125,9 @@ void castRays()
     float scaleModifier = 0.8; 
     int lineHeight = (int)(scaleModifier*(VIEWPORT_HEIGHT / perpWallDist / cameraPlaneMagnitude));
 
-    int lineStart = -(lineHeight / 2) + (VIEWPORT_HEIGHT / 2);
+    int lineStart = (-(lineHeight / 2) + (VIEWPORT_HEIGHT / 2)) + CAMERA_PITCH;
     if (lineStart < 0) lineStart = 0;
-    int lineEnd = (lineHeight / 2) + (VIEWPORT_HEIGHT / 2);
+    int lineEnd = ((lineHeight / 2) + (VIEWPORT_HEIGHT / 2)) + CAMERA_PITCH;
     if (lineEnd >= VIEWPORT_HEIGHT) lineEnd = VIEWPORT_HEIGHT - 1;
 
     unsigned char red, green, blue; 
@@ -156,16 +161,16 @@ void castRays()
     }
 
     glBegin(GL_LINES);
-    glColor3ub(red, green, blue);
-    glVertex2i(x, lineStart);
-    glVertex2i(x, lineEnd);
+      glColor3ub(red, green, blue);
+      glVertex2i(x, lineStart);
+      glVertex2i(x, lineEnd);
     glEnd();
   }
 }
 
 void init()
 {
-  glClearColor(0.3,0.3,0.3,0);
+  glClearColor(0.3, 0.3, 0.3, 0);
 
   gluOrtho2D(0, WINDOW_W, WINDOW_H, 0);
 
@@ -190,17 +195,28 @@ void display()
 void keyDown(unsigned char key, int x, int y) 
 {
   keys[key] = true; 
+
+  if (keys['w'])
+  {
+
+  }
 }
 
 void keyUp(unsigned char key, int x, int y) 
 {
   keys[key] = false; 
+
+  if (!keys['w'])
+  {
+
+  }
 }
 
 Angle oldAngle = {0, 0};
 Position oldPosition = PLAYER_SPAWN;
+float oldPitch = 0;
 
-void update() 
+void update()
 {
   //Change input system so i can get special keys like shift and escape
   
@@ -223,10 +239,11 @@ void update()
     player.position.y += (player.angle.x * PLAYER_SPEED);
   }
 
-  if (oldAngle.x != player.angle.x || oldAngle.y != player.angle.y || oldPosition.x != player.position.x || oldPosition.y != player.position.y)
+  if (oldPitch != CAMERA_PITCH || oldAngle.x != player.angle.x || oldAngle.y != player.angle.y || oldPosition.x != player.position.x || oldPosition.y != player.position.y)
   {
     oldPosition = player.position;
-      oldAngle = player.angle;
+    oldAngle = player.angle;
+    oldPitch = CAMERA_PITCH;
 
     glutPostRedisplay();
   }
@@ -268,6 +285,19 @@ void mouseMotion(int x, int y)
       planeY = prevPlaneX * sin(ROTATION_ANGLE) + planeY * cos(ROTATION_ANGLE);
     }
 
+    if (deltaY < 0)
+    {
+      CAMERA_PITCH += 1 * ROTATION_ANGLE * 300;
+
+      if (CAMERA_PITCH > 600) CAMERA_PITCH = 600;
+    }
+    else if (deltaY > 0)
+    {
+      CAMERA_PITCH -= 1 * ROTATION_ANGLE * 300;
+
+      if (CAMERA_PITCH < -600) CAMERA_PITCH = -600;
+    }
+
     glutWarpPointer(CENTER_X, CENTER_Y);
   }
 }
@@ -287,6 +317,11 @@ void windowEntry(int state)
   }
 }
 
+void windowResize(int width, int height)
+{
+  glutReshapeWindow(WINDOW_W, WINDOW_H);
+}
+
 int main(int argc, char** argv) 
 {
     glutInit(&argc, argv);    
@@ -300,7 +335,7 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < KEY_COUNT; i++) 
     {
-        keys[i] = false;
+      keys[i] = false;
     }
 
     glutDisplayFunc(display); 
@@ -310,6 +345,7 @@ int main(int argc, char** argv)
     glutKeyboardFunc(keyDown);  
     glutKeyboardUpFunc(keyUp);  
 
+    glutReshapeFunc(windowResize);
     glutEntryFunc(windowEntry);
 
     glutSetCursor(GLUT_CURSOR_NONE);
